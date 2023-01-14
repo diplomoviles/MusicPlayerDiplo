@@ -3,6 +3,7 @@ package com.amaurypm.musicplayerdiplo.view.activities
 import android.Manifest
 import android.content.Context
 import android.content.DialogInterface
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
@@ -14,8 +15,11 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.amaurypm.musicplayerdiplo.databinding.ActivityMainBinding
 import com.amaurypm.musicplayerdiplo.model.MusicFile
+import com.amaurypm.musicplayerdiplo.view.adapters.SongsAdapter
 
 
 class MainActivity : AppCompatActivity() {
@@ -81,6 +85,16 @@ class MainActivity : AppCompatActivity() {
 
             musicFiles = getAllAudio(this)
 
+            if(musicFiles.size >= 1) {
+                val songsAdapter = SongsAdapter(this, musicFiles)
+
+                binding.rvSongs.layoutManager =
+                    LinearLayoutManager(this, RecyclerView.VERTICAL, false)
+                binding.rvSongs.adapter = songsAdapter
+            }else{
+                //Informar al usuario que no hay archivos de audio reproducibles
+            }
+
         }
 
     }
@@ -134,7 +148,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun getAllAudio(context: Context): ArrayList<MusicFile>{
+    fun getAllAudio(context: Context): ArrayList<MusicFile> {
         val tempAudioList = ArrayList<MusicFile>()
 
         val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
@@ -149,15 +163,15 @@ class MainActivity : AppCompatActivity() {
 
         val cursor = context.contentResolver.query(uri, projection, null, null, null)
 
-        if(cursor!=null){
-            while(cursor.moveToNext()){
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
                 val album = cursor.getString(0)
                 val title = cursor.getString(1)
                 val duration = cursor.getString(2)
                 val path = cursor.getString(3)
                 val artist = cursor.getString(4)
 
-                val musicFile = MusicFile(path, title, artist, album, duration?:"0")
+                val musicFile = MusicFile(path, title, artist, album, duration ?: "0")
                 Log.d("MUSICA", "Path: $path - Album: $album")
                 tempAudioList.add(musicFile)
             }
@@ -165,6 +179,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         return tempAudioList
+    }
+
+    fun selectedSong(position: Int){
+        //Toast.makeText(this, "Se hizo click en el elemento: $position", Toast.LENGTH_SHORT).show()
+        val intent = Intent(this, PlayerActivity::class.java)
+
+        intent.putExtra("position", position)
+
+        startActivity(intent)
     }
 
 }

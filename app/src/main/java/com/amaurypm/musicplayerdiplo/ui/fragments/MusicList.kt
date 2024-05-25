@@ -16,8 +16,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.amaurypm.musicplayerdiplo.R
+import com.amaurypm.musicplayerdiplo.data.local.model.AudioRepository
 import com.amaurypm.musicplayerdiplo.databinding.FragmentMusicListBinding
+import com.amaurypm.musicplayerdiplo.ui.adapters.SongAdapter
 import com.amaurypm.musicplayerdiplo.ui.providers.PermissionExplanationProvider
 import com.amaurypm.musicplayerdiplo.ui.providers.ReadAudioPermissionExplanationProvider
 import com.amaurypm.musicplayerdiplo.ui.providers.ReadPermissionExplanationProvider
@@ -28,7 +33,9 @@ class MusicList : Fragment() {
     private var _binding: FragmentMusicListBinding? = null
     private val binding get() = _binding!!
 
-    private val musicListViewModel: MusicListViewModel by viewModels()
+    private val musicListViewModel: MusicListViewModel by viewModels {
+        MusicViewModelFactory(AudioRepository(requireContext()))
+    }
 
     private var readMediaAudioGranted = false
     private var readPermissionGranted = false
@@ -71,19 +78,21 @@ class MusicList : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        musicListViewModel.permissionsToRequest.observe(viewLifecycleOwner){ queue ->
+        musicListViewModel.permissionsToRequest.observe(viewLifecycleOwner) { queue ->
 
-            queue.reversed().forEach(){ permission ->
+            queue.reversed().forEach() { permission ->
                 //Pongo el diálogo para dar mis razones al usuario sobre los permisos.
 
                 showPermissionExplanationDialog(
-                    when(permission){
+                    when (permission) {
                         Manifest.permission.READ_EXTERNAL_STORAGE -> ReadPermissionExplanationProvider()
                         Manifest.permission.WRITE_EXTERNAL_STORAGE -> WritePermissionExplanationProvider()
-                        Manifest.permission.READ_MEDIA_AUDIO -> ReadAudioPermissionExplanationProvider(requireContext())
+                        Manifest.permission.READ_MEDIA_AUDIO -> ReadAudioPermissionExplanationProvider(
+                            requireContext()
+                        )
+
                         else -> return@forEach
-                    }
-                    ,
+                    },
                     !shouldShowRequestPermissionRationale(permission),
                     { //Lambda onDismiss
                         musicListViewModel.dismissDialog()
@@ -188,11 +197,32 @@ class MusicList : Fragment() {
     }
 
     private fun actionPermissionsGranted() {
-        Toast.makeText(
+        /*Toast.makeText(
             requireContext(),
             "Todos los permisos han sido concedidos",
             Toast.LENGTH_SHORT
-        ).show()
+        ).show()*/
+        musicListViewModel.getAllAudio()
+
+        musicListViewModel.musicFiles.observe(viewLifecycleOwner) { songs ->
+            if (songs.isNotEmpty()) {
+                val songsAdapter = SongAdapter(songs) { position ->
+                    //Click de cada elemento
+                    findNavController().navigate(MusicListDirections.actionMusicListToMusicPlayer(
+                        position
+                    ))
+                }
+
+                binding.rvSongs.layoutManager =
+                    LinearLayoutManager(
+                        requireContext(),
+                        RecyclerView.VERTICAL,
+                        false
+                    )
+
+                binding.rvSongs.adapter = songsAdapter
+            }
+        }
     }
 
     private fun showPermissionExplanationDialog(
@@ -201,15 +231,14 @@ class MusicList : Fragment() {
         onDismiss: () -> Unit,
         onOkClick: () -> Unit,
         onGoToAppSettings: () -> Unit
-    ){
+    ) {
         AlertDialog.Builder(requireContext())
             .setTitle(permissionExplanationProvider.getPermissionText())
             .setMessage(permissionExplanationProvider.getExplanation(isPermanentlyDeclined))
-            .setPositiveButton(if(isPermanentlyDeclined) "Configuración" else "Aceptar"){ _, _ ->
-                if(isPermanentlyDeclined){
+            .setPositiveButton(if (isPermanentlyDeclined) "Configuración" else "Aceptar") { _, _ ->
+                if (isPermanentlyDeclined) {
                     onGoToAppSettings()
-                }
-                else {
+                } else {
                     onOkClick()
                 }
             }

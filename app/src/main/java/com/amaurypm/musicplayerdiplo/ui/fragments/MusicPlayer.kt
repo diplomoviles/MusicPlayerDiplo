@@ -12,6 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.navArgs
@@ -26,7 +27,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 
-class MusicPlayer : Fragment(), OnCompletionListener {
+class MusicPlayer : Fragment(), OnCompletionListener, View.OnClickListener {
 
     private var _binding: FragmentMusicPlayerBinding? = null
     private val binding get() = _binding!!
@@ -73,6 +74,15 @@ class MusicPlayer : Fragment(), OnCompletionListener {
             //Ponemos el floating action button con la imagen de pausa
             binding.fabPlayPause.setImageResource(R.drawable.ic_pause)
 
+
+            //Colocamos los clicklisteners de los botones para que implemente la interfaz
+            binding.fabPlayPause.setOnClickListener(this)
+            binding.ivNext.setOnClickListener(this)
+            binding.ivPrev.setOnClickListener(this)
+            binding.ivShuffle.setOnClickListener(this)
+            binding.ivRepeat.setOnClickListener(this)
+
+
             prepareSong(song, true)
 
             //Para que el usuario pueda manipular la seekbar
@@ -88,6 +98,8 @@ class MusicPlayer : Fragment(), OnCompletionListener {
                 override fun onStopTrackingTouch(p0: SeekBar?) {}
 
             })
+
+
 
 
         }
@@ -158,6 +170,11 @@ class MusicPlayer : Fragment(), OnCompletionListener {
 
     override fun onCompletion(mp: MediaPlayer?) {
         //Aquí programamos cuando se termine de reproducir un contenido
+        mediaPlayer.release()
+        updatePosition(isNext = true)
+        song = audioList[position]
+        prepareSong(song, true)
+        binding.fabPlayPause.setImageResource(R.drawable.ic_pause)
     }
 
     //Para tener una canción preparada y lista para reproducir
@@ -198,5 +215,72 @@ class MusicPlayer : Fragment(), OnCompletionListener {
 
             }
         }
+    }
+
+    override fun onClick(view: View?) {
+        //Aquí vamos a procesar todos los clicks a los botones del player
+        when(view){
+            binding.fabPlayPause -> togglePlayPause()
+            binding.ivNext -> playNextOrPrevious(isNext = true)
+            binding.ivPrev -> playNextOrPrevious(isNext = false)
+            binding.ivShuffle -> toggleShuffle()
+            binding.ivRepeat -> toggleRepeat()
+        }
+    }
+
+    private fun togglePlayPause(){
+        if(mediaPlayer.isPlaying){
+            mediaPlayer.pause()
+            binding.fabPlayPause.setImageResource(R.drawable.ic_play)
+        } else{
+            mediaPlayer.start()
+            binding.fabPlayPause.setImageResource(R.drawable.ic_pause)
+        }
+    }
+
+    private fun toggleShuffle(){
+        isShuffleOn = !isShuffleOn
+        if(isShuffleOn){
+            isRepeatOn = false
+            binding.ivShuffle.setColorFilter(ContextCompat.getColor(requireContext(), R.color.onColor))
+            binding.ivRepeat.setColorFilter(ContextCompat.getColor(requireContext(), R.color.white))
+        }else{
+            binding.ivShuffle.setColorFilter(ContextCompat.getColor(requireContext(), R.color.white))
+        }
+    }
+
+    private fun toggleRepeat(){
+        isRepeatOn = !isRepeatOn
+        if(isRepeatOn){
+            isShuffleOn = false
+            binding.ivRepeat.setColorFilter(ContextCompat.getColor(requireContext(), R.color.onColor))
+            binding.ivShuffle.setColorFilter(ContextCompat.getColor(requireContext(), R.color.white))
+        }else{
+            binding.ivRepeat.setColorFilter(ContextCompat.getColor(requireContext(), R.color.white))
+        }
+    }
+
+    private fun updatePosition(isNext: Boolean){  //isNext es para saber si vamos hacia adelante o atrás
+        position = when{
+            //Shuffle está encendido
+            isShuffleOn && !isRepeatOn -> (0 until audioList.size).random()
+            //Normal: Sin shuffle ni repeat
+            !isShuffleOn && !isRepeatOn ->
+                if(isNext) (position + 1) % audioList.size else (position - 1 + audioList.size) % audioList.size
+            //Repeat está encendido
+            else -> position
+        }
+        //10 canciones ->  0 al 9      1 + 1 = 2   2 % 10 = 2      9 + 1 = 10     10 % 10  = 0
+    }
+
+    private fun playNextOrPrevious(isNext: Boolean){
+        updatePosition(isNext)
+        song = audioList[position]
+        playing = mediaPlayer.isPlaying
+        mediaPlayer.release()
+        prepareSong(song, playing)
+        binding.fabPlayPause.setImageResource(
+            if(mediaPlayer.isPlaying) R.drawable.ic_pause else R.drawable.ic_play
+        )
     }
 }

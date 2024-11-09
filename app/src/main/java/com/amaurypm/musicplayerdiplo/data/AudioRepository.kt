@@ -2,6 +2,7 @@ package com.amaurypm.musicplayerdiplo.data
 
 import android.content.Context
 import android.provider.MediaStore
+import android.util.Log
 import com.amaurypm.musicplayerdiplo.data.local.model.MusicFile
 
 class AudioRepository(
@@ -16,7 +17,7 @@ class AudioRepository(
         //Generamos los elementos que me pide el query
         val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
 
-        val selection = "${MediaStore.Audio.Media.IS_MUSIC}"  //Filtro o condición para que el query solamente me dé archivos de música
+        val selection = "${MediaStore.Audio.Media.IS_MUSIC} == 1"  //Filtro o condición para que el query solamente me dé archivos de música
 
         val projection = arrayOf(
             MediaStore.Audio.Media.ALBUM,
@@ -33,6 +34,25 @@ class AudioRepository(
             null,
             null
         )
+
+        if(cursor != null){
+            while(cursor.moveToNext()){
+
+                //Obteniendo las columnas que me interesan de cada archivo de música
+                val album = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM))
+                val title = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE))
+                val duration = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION))
+                val data = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA))
+                val artist = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST))
+
+                val musicFile = MusicFile(data, title, artist, album, duration ?: "0")
+
+                Log.d("MUSICA", "Ruta: $data - Album: $album")
+
+                tempAudioList.add(musicFile)
+            }
+            cursor.close()
+        }
 
         return tempAudioList
     }

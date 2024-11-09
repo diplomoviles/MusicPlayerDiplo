@@ -4,10 +4,14 @@ import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.amaurypm.musicplayerdiplo.data.AudioRepository
 import com.amaurypm.musicplayerdiplo.data.local.model.MusicFile
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MusicListViewModel(
-
+    private val audioRepository: AudioRepository
 ): ViewModel() {
 
     //Cola para los strings de los permisos a solicitar
@@ -20,8 +24,8 @@ class MusicListViewModel(
     val permissionsToRequest: LiveData<MutableList<String>> = _permissionsToRequest
     
     //Livedata para la lista de archivos de música
-    private val _musicFiles = MutableLiveData<MusicFile>()
-    val musicFiles: LiveData<MusicFile> = _musicFiles
+    private val _musicFiles = MutableLiveData<MutableList<MusicFile>>()
+    val musicFiles: LiveData<MutableList<MusicFile>> = _musicFiles
 
 
     //Función para quitar los permisos de la cola
@@ -41,8 +45,10 @@ class MusicListViewModel(
         }
     }
 
-
-
-
+    fun getAllAudio(){
+        viewModelScope.launch(Dispatchers.IO) {
+            _musicFiles.postValue(audioRepository.getAllAudio())
+        }
+    }
 
 }

@@ -22,5 +22,8 @@
         <action
             android:id="@+id/action_musicPlayer_to_musicList"
             app:destination="@id/musicList" />
+        <argument
+            android:name="position"
+            app:argType="integer" />
     </fragment>
 </navigation>

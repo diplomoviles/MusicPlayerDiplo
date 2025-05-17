@@ -3,10 +3,16 @@ package com.amaurypm.musicplayerdiplo.ui.fragments
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.amaurypm.musicplayerdiplo.data.AudioRepository
 import com.amaurypm.musicplayerdiplo.data.local.model.MusicFile
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.security.Permission
 
-class MusicViewModel: ViewModel() {
+class MusicViewModel(
+    private val audioRepository: AudioRepository
+): ViewModel() {
 
     //Cola para los strings de los permisos a solicitar
     private val permissionsToRequestQueue = mutableListOf<String>()
@@ -38,5 +44,12 @@ class MusicViewModel: ViewModel() {
             _permissionsToRequest.postValue(permissionsToRequestQueue)
         }
     }
+
+    fun getAllAudio(){
+        viewModelScope.launch(Dispatchers.IO) {
+            _musicFiles.postValue(audioRepository.getAllAudio())
+        }
+    }
+
 
 }

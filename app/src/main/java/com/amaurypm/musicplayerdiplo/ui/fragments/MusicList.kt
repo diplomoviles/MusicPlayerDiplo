@@ -11,17 +11,19 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.amaurypm.musicplayerdiplo.data.AudioRepository
 import com.amaurypm.musicplayerdiplo.databinding.FragmentMusicListBinding
 import com.amaurypm.musicplayerdiplo.permissions.providers.PermissionExplanationProvider
 import com.amaurypm.musicplayerdiplo.permissions.providers.ReadAudioPermissionExplanationProvider
 import com.amaurypm.musicplayerdiplo.permissions.providers.ReadPermissionExplanationProvider
 import com.amaurypm.musicplayerdiplo.permissions.providers.WritePermissionExplanationProvider
+import com.amaurypm.musicplayerdiplo.ui.adapters.SongsAdapter
 
 
 class MusicList : Fragment() {
@@ -30,7 +32,9 @@ class MusicList : Fragment() {
     private val binding get() = _binding!!
 
     //Instanciamos el viewmodel
-    private val musicViewModel: MusicViewModel by viewModels()
+    private val musicViewModel: MusicViewModel by viewModels{
+        MusicViewModelFactory(AudioRepository(requireContext()))
+    }
 
     //Variables booleanas para el estado de los permisos
     private var readPermissionGranted = false //Read external storage
@@ -189,12 +193,26 @@ class MusicList : Fragment() {
     }
 
     private fun actionPermissionsGranted() {
-        /*Toast.makeText(
-            requireContext(),
-            "Todos los permisos se han concedido. Ehhhhh!!",
-            Toast.LENGTH_SHORT
-        ).show()*/
-        AudioRepository(requireContext()).getAllAudio()
+        musicViewModel.getAllAudio()
+
+        musicViewModel.musicFiles.observe(viewLifecycleOwner){ songs ->
+            //Instanciamos el adapter para el recyclerview
+            if(songs.isNotEmpty()){
+                val songsAdapter = SongsAdapter(songs){ position ->
+                    //Aquí va el click de cada elemento (canción) en el recycler view
+
+                    //Navegamos a la siguiente pantalla pasando la posición
+                    findNavController().navigate(
+                        MusicListDirections.actionMusicListToMusicPlayerDiplo(position)
+                    )
+                }
+
+                binding.rvSongs.apply {
+                    layoutManager = LinearLayoutManager(requireContext())
+                    adapter = songsAdapter
+                }
+            }
+        }
     }
 
     private fun showPermissionExplanationDialog(

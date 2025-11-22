@@ -1,8 +1,5 @@
 <project version="4">
   <component name="ExternalStorageConfigurationManager" enabled="true" />
-  <component name="GithubDefaultAccount">
-    <option name="defaultAccountId" value="42b8de19-432f-49ba-a9a9-c2540b2e1856" />
-  </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_21" default="true" project-jdk-name="jbr-21" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/build/classes" />
   </component>
